@@ -101,11 +101,12 @@ cd ./recordings
 
 ### Video Participants on Teams (Docker)
 
-⚠️ **Current Docker Limitation**: When running the bot in Docker, you may not see video streams of other participants in Microsoft Teams meetings. This is due to browser compatibility (chromium) issues in the containerized environment.
+⚠️ **ARM Platform Limitation**: When running the bot on an ARM-based system, video streams from other participants in Microsoft Teams meetings may not be visible.
+This is due to browser compatibility issues—Google Chrome is not supported on ARM, so Chromium is used instead, which offers limited functionality in this context.
 
-✅ **Production Workaround**: For full video support, deploy the bot on a **real Ubuntu server with Google Chrome** installed. This provides optimal compatibility and performance.
+🔧 **Docker Behavior**: The provided Dockerfile automatically installs Google Chrome on AMD64 systems and Chromium on ARM systems.
 
-🙋‍♂️ **Community Contribution Welcome**: We'd love a community PR that properly integrates Google Chrome into our Docker image!
+✅ **Recommended Solution**: For full video functionality and optimal performance, deploy the bot on an **AMD64** system, which fully supports Google Chrome.
 
 ## Dive Deeper
 
