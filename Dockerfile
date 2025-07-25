@@ -1,8 +1,9 @@
 # Meeting Bot - Docker Image for Screen Recording
 FROM ubuntu:24.04
 
+RUN apt-get update && apt-get install -y curl ca-certificates gnupg wget
+
 # Install Node.js 20.x
-RUN apt-get update && apt-get install -y curl ca-certificates gnupg
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
 RUN apt-get install -y nodejs
 
@@ -16,8 +17,22 @@ RUN apt-get update && apt-get install -y \
     # Media processing
     ffmpeg \
     # Utilities
-    curl unzip \
-    && rm -rf /var/lib/apt/lists/*
+    curl unzip
+
+RUN if [ "$(dpkg --print-architecture)" = "amd64" ]; then \
+        # Install Chrome on amd64 architecture
+        wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor > /usr/share/keyrings/google-linux-keyring.gpg && \
+        echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-linux-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" \
+            > /etc/apt/sources.list.d/google-chrome.list; \
+        apt-get update && \
+        apt-get install -y google-chrome-stable; \
+    else \
+        # Install Playwright's Chromium + create symlink for browser.ts compatibility
+        npx playwright install chromium && \
+            find /root/.cache/ms-playwright -name chrome -type f -executable | head -1 | xargs -I {} ln -sf {} /usr/bin/google-chrome; \
+    fi
+
+RUN rm -rf /var/lib/apt/lists/*
 
 # Install AWS CLI v2
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
@@ -28,9 +43,6 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# Install Playwright's Chromium + create symlink for browser.ts compatibility
-RUN npx playwright install chromium && \
-    find /root/.cache/ms-playwright -name chrome -type f -executable | head -1 | xargs -I {} ln -sf {} /usr/bin/google-chrome
 
 # Build application
 COPY . .
