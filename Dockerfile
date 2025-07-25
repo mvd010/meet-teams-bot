@@ -1,7 +1,7 @@
 # Meeting Bot - Docker Image for Screen Recording
 FROM ubuntu:24.04
 
-RUN apt-get update && apt-get install -y curl ca-certificates gnupg wget
+RUN apt-get update && apt-get install -y curl ca-certificates gnupg
 
 # Install Node.js 20.x
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
@@ -17,11 +17,11 @@ RUN apt-get update && apt-get install -y \
     # Media processing
     ffmpeg \
     # Utilities
-    curl unzip
+    unzip
 
 RUN if [ "$(dpkg --print-architecture)" = "amd64" ]; then \
         # Install Chrome on amd64 architecture
-        wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor > /usr/share/keyrings/google-linux-keyring.gpg && \
+        curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor > /usr/share/keyrings/google-linux-keyring.gpg && \
         echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-linux-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" \
             > /etc/apt/sources.list.d/google-chrome.list; \
         apt-get update && \
@@ -42,7 +42,6 @@ RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
-
 
 # Build application
 COPY . .
