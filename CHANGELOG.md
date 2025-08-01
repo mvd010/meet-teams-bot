@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - Added security policy and vulnerability reporting process
 - Enhanced .gitignore to prevent sensitive data exposure
+- Enhanced configuration to disable public-read ACL on S3 uploads
 
 ## [1.0.0] - 2024-01-XX
 
