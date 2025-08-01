@@ -77,9 +77,16 @@ export class S3Uploader {
                 'cp',
                 filePath,
                 s3FullPath,
-                '--acl',
-                'public-read',
             ]
+
+            // If `remote.aws_s3_public` is not explicitly set to false,
+            // default to public access (`public-read`) for backward compatibility
+            if (GLOBAL.get().remote?.aws_s3_public !== false) {
+                fullArgs.push(
+                    '--acl',
+                    'public-read'
+                )
+            }
 
             console.log('🔍 S3 upload command:', 'aws', fullArgs.join(' '))
 
@@ -172,10 +179,17 @@ export class S3Uploader {
                 'sync',
                 localDir,
                 s3FullPath,
-                '--acl',
-                'public-read',
                 '--delete', // Remove files in S3 that don't exist locally
             ]
+
+            // If `remote.aws_s3_public` is not explicitly set to false,
+            // default to public access (`public-read`) for backward compatibility
+            if (GLOBAL.get().remote?.aws_s3_public !== false) {
+                fullArgs.push(
+                    '--acl',
+                    'public-read'
+                )
+            }
 
             console.log('🔍 S3 sync command:', 'aws', fullArgs.join(' '))
 
