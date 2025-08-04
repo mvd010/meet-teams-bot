@@ -110,6 +110,7 @@ export type MeetingParams = {
         api_server_baseurl: string
         aws_s3_video_bucket: string
         aws_s3_log_bucket: string
+        aws_s3_public?: boolean
     } | null
     // -----------------------------------------------------------
     secret: string
