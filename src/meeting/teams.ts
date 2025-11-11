@@ -270,10 +270,10 @@ export class TeamsProvider implements MeetingProviderInterface {
             )
         }
 
-        // Deactivate microphone if not streaming input
-        // Always do this irrespective of the interface
         const streaming_input = GLOBAL.get().streaming_input
-        if (!streaming_input) {
+        if (streaming_input) {
+            await Promise.race([activateMicrophone(page), sleep(2000)])
+        } else {
             await Promise.race([deactivateMicrophone(page), sleep(2000)])
         }
 
@@ -700,16 +700,59 @@ async function activateCamera(page: Page): Promise<void> {
     }
 }
 
+async function isMicrophoneMuted(page: Page): Promise<boolean> {
+    // Teams shows unmute mic title when microphone is muted
+    const unmuteMicButton = page.locator('button[title="Unmute mic"]')
+    if ((await unmuteMicButton.count()) > 0) {
+        console.log('[Teams] Microphone is muted')
+        return true
+    }
+
+    // Teams shows mute mic title when microphone is not muted
+    const muteMicButton = page.locator('button[title="Mute mic"]')
+    if ((await muteMicButton.count()) > 0) {
+        console.log('[Teams] Microphone is not muted')
+        return false
+    }
+
+    // Default assumption if we cannot determine state
+    console.warn(
+        '[Teams] Unable to determine microphone state, assuming unmuted',
+    )
+    return false
+}
+
+async function toggleMicrophoneWithShortcut(page: Page): Promise<void> {
+    await page.keyboard.down('Control')
+    await page.keyboard.down('Shift')
+    await page.keyboard.press('KeyM')
+    await page.keyboard.up('Shift')
+    await page.keyboard.up('Control')
+    console.log('Microphone toggle shortcut sent (Ctrl+Shift+M)')
+}
+
+async function activateMicrophone(page: Page): Promise<void> {
+    console.log('activating microphone')
+    try {
+        if (!(await isMicrophoneMuted(page))) {
+            return
+        }
+        await toggleMicrophoneWithShortcut(page)
+
+        // Give Teams a moment to apply the state change
+        await sleep(500)
+    } catch (error) {
+        console.error('Failed to activate microphone:', error)
+    }
+}
+
 async function deactivateMicrophone(page: Page): Promise<void> {
     console.log('deactivating microphone')
     try {
-        // Teams keyboard shortcut: Ctrl+Shift+M toggles mute/unmute
-        await page.keyboard.down('Control')
-        await page.keyboard.down('Shift')
-        await page.keyboard.press('KeyM')
-        await page.keyboard.up('Shift')
-        await page.keyboard.up('Control')
-        console.log('Microphone toggle shortcut sent (Ctrl+Shift+M)')
+        if (await isMicrophoneMuted(page)) {
+            return
+        }
+        await toggleMicrophoneWithShortcut(page)
 
         // Give Teams a moment to apply the state change
         await sleep(500)
