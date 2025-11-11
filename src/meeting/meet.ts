@@ -105,6 +105,8 @@ export class MeetProvider implements MeetingProviderInterface {
                 console.log(
                     `Join button search attempt ${attempt}/${joinButtonMaxAttempts}`,
                 )
+                // Press Escape to close any modal that might be open
+                await page.keyboard.press('Escape')
 
                 // First try with span selector (odd attempts)
                 if (!askToJoinClicked && attempt % 2 === 1) {
@@ -668,7 +670,10 @@ async function changeLayout(
             console.log(
                 'Bot is no longer in the meeting, stopping layout change',
             )
-            GLOBAL.setError(MeetingEndReason.BotRemoved, 'Bot removed during layout change')
+            GLOBAL.setError(
+                MeetingEndReason.BotRemoved,
+                'Bot removed during layout change',
+            )
             return false
         }
 
@@ -700,7 +705,10 @@ async function changeLayout(
             console.log(
                 'Bot is no longer in the meeting after clicking More options',
             )
-            GLOBAL.setError(MeetingEndReason.BotRemoved, 'Bot removed after clicking More options')
+            GLOBAL.setError(
+                MeetingEndReason.BotRemoved,
+                'Bot removed after clicking More options',
+            )
             return false
         }
 
@@ -730,7 +738,10 @@ async function changeLayout(
             console.log(
                 'Bot is no longer in the meeting after clicking Change layout',
             )
-            GLOBAL.setError(MeetingEndReason.BotRemoved, 'Bot removed after clicking Change layout')
+            GLOBAL.setError(
+                MeetingEndReason.BotRemoved,
+                'Bot removed after clicking Change layout',
+            )
             return false
         }
 
@@ -757,7 +768,10 @@ async function changeLayout(
             console.log(
                 'Bot is no longer in the meeting after clicking Spotlight',
             )
-            GLOBAL.setError(MeetingEndReason.BotRemoved, 'Bot removed after clicking Spotlight')
+            GLOBAL.setError(
+                MeetingEndReason.BotRemoved,
+                'Bot removed after clicking Spotlight',
+            )
             return false
         }
 
