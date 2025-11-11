@@ -35,16 +35,11 @@ export class TeamsProvider implements MeetingProviderInterface {
         page.setDefaultTimeout(30000)
         page.setDefaultNavigationTimeout(30000)
 
-        // Set permissions based on streaming_input
-        if (streaming_input) {
-            await browserContext.grantPermissions(['microphone', 'camera'], {
-                origin: url.origin,
-            })
-        } else {
-            await browserContext.grantPermissions(['camera'], {
-                origin: url.origin,
-            })
-        }
+        // Always grant permissions for microphone and camera
+        // Required to capture sound and video
+        await browserContext.grantPermissions(['microphone', 'camera'], {
+            origin: url.origin,
+        })
 
         try {
             await page.goto(link, {
@@ -275,6 +270,13 @@ export class TeamsProvider implements MeetingProviderInterface {
             )
         }
 
+        const streaming_input = GLOBAL.get().streaming_input
+        if (streaming_input) {
+            await Promise.race([activateMicrophone(page), sleep(2000)])
+        } else {
+            await Promise.race([deactivateMicrophone(page), sleep(2000)])
+        }
+
         if (isLightInterface) {
             try {
                 await handlePermissionDialog(page)
@@ -291,16 +293,6 @@ export class TeamsProvider implements MeetingProviderInterface {
                         e instanceof Error ? e.message : e,
                     ),
                 )
-
-                const streaming_input = GLOBAL.get().streaming_input
-                if (streaming_input) {
-                    await Promise.race([activateMicrophone(page), sleep(2000)])
-                } else {
-                    await Promise.race([
-                        deactivateMicrophone(page),
-                        sleep(2000),
-                    ])
-                }
             } catch (e) {
                 console.warn(
                     'Camera/mic setup failed, continuing:',
@@ -708,22 +700,47 @@ async function activateCamera(page: Page): Promise<void> {
     }
 }
 
+async function isMicrophoneMuted(page: Page): Promise<boolean> {
+    // Teams shows unmute mic title when microphone is muted
+    const unmuteMicButton = page.locator('button[title="Unmute mic"]')
+    if ((await unmuteMicButton.count()) > 0) {
+        console.log('[Teams] Microphone is muted')
+        return true
+    }
+
+    // Teams shows mute mic title when microphone is not muted
+    const muteMicButton = page.locator('button[title="Mute mic"]')
+    if ((await muteMicButton.count()) > 0) {
+        console.log('[Teams] Microphone is not muted')
+        return false
+    }
+
+    // Default assumption if we cannot determine state
+    console.warn(
+        '[Teams] Unable to determine microphone state, assuming unmuted',
+    )
+    return false
+}
+
+async function toggleMicrophoneWithShortcut(page: Page): Promise<void> {
+    await page.keyboard.down('Control')
+    await page.keyboard.down('Shift')
+    await page.keyboard.press('KeyM')
+    await page.keyboard.up('Shift')
+    await page.keyboard.up('Control')
+    console.log('Microphone toggle shortcut sent (Ctrl+Shift+M)')
+}
+
 async function activateMicrophone(page: Page): Promise<void> {
     console.log('activating microphone')
     try {
-        const micOffText = page.locator('text="Your microphone is muted"')
-        if ((await micOffText.count()) > 0) {
-            const micButton = page.locator('button[title="Unmute"]')
-            if ((await micButton.count()) > 0) {
-                await micButton.click()
-                console.log('Microphone unmuted successfully')
-                await sleep(500)
-            } else {
-                console.log('Failed to find unmute button')
-            }
-        } else {
-            console.log('Microphone is already on or text not found')
+        if (!(await isMicrophoneMuted(page))) {
+            return
         }
+        await toggleMicrophoneWithShortcut(page)
+
+        // Give Teams a moment to apply the state change
+        await sleep(500)
     } catch (error) {
         console.error('Failed to activate microphone:', error)
     }
@@ -732,19 +749,13 @@ async function activateMicrophone(page: Page): Promise<void> {
 async function deactivateMicrophone(page: Page): Promise<void> {
     console.log('deactivating microphone')
     try {
-        const micOnText = page.locator('text="Your microphone is on"')
-        if ((await micOnText.count()) > 0) {
-            const micButton = page.locator('button[title="Mute"]')
-            if ((await micButton.count()) > 0) {
-                await micButton.click()
-                console.log('Microphone muted successfully')
-                await sleep(500)
-            } else {
-                console.log('Failed to find mute button')
-            }
-        } else {
-            console.log('Microphone is already muted or text not found')
+        if (await isMicrophoneMuted(page)) {
+            return
         }
+        await toggleMicrophoneWithShortcut(page)
+
+        // Give Teams a moment to apply the state change
+        await sleep(500)
     } catch (error) {
         console.error('Failed to deactivate microphone:', error)
     }
